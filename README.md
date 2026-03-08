@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Bash for Blue-Team Investigation Course Kit
 
 This repository contains a complete training package for teaching Bash-driven cybersecurity investigation.
@@ -95,3 +96,7 @@ Installer kernel parameter:
 ```text
 ds=nocloud-net;s=https://autodeploy.leflr.com/
 ```
+=======
+# Bash-Lesson
+Bash-based blue-team investigation lab kit with automated environment setup, realistic breach log generation, student labs, instructor guides, QA/QC checklists, and deployable Ubuntu autoinstall assets for repeatable SOC-style training.
+>>>>>>> 9bc12b19b1e5bd839aebffba70707cfd7c8b1d42
