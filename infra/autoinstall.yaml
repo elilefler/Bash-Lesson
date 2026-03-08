@@ -1,0 +1,44 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  timezone: UTC
+
+  identity:
+    hostname: bash-cyber-lab
+    username: student
+    # Password hash for placeholder only. Replace with your own hashed password.
+    password: "$6$BAJpTOszbl0yq20i$KkbclIlJspAK7VNwym/hKd5I8TZJTgiYNMAv9XMgR5EgA1VePxn0N7sLTdMkasWomELQ7GX2R5ylm/H6yj.yP/"
+
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  storage:
+    layout:
+      name: direct
+
+  updates: all
+
+  packages:
+    - bash
+    - coreutils
+    - grep
+    - sed
+    - gawk
+    - findutils
+    - less
+    - nano
+    - git
+    - curl
+
+  late-commands:
+    - curtin in-target --target=/target -- bash -c 'mkdir -p /home/student/bash-cyber-course'
+    - curtin in-target --target=/target -- bash -c 'chown -R student:student /home/student/bash-cyber-course'
+
+  user-data:
+    disable_root: true
+    package_update: true
+    package_upgrade: true
