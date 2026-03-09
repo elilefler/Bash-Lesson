@@ -35,8 +35,7 @@ autoinstall:
     - curl
 
   late-commands:
-    - curtin in-target --target=/target -- bash -c 'mkdir -p /home/student/bash-cyber-course'
-    - curtin in-target --target=/target -- bash -c 'chown -R student:student /home/student/bash-cyber-course'
+    - curtin in-target --target=/target -- bash -c 'set -euo pipefail; URL="https://autodeploy.leflr.com/Bash-Lesson.tar.gz"; DEST="/home/student/bash-cyber-course"; TMP="/tmp/bash-course.tar.gz"; rm -rf "$DEST"; mkdir -p "$DEST"; curl -fsSL "$URL" -o "$TMP"; tar -xzf "$TMP" -C "$DEST"; chown -R student:student "$DEST"; chmod +x "$DEST/setup_bash_cyber_lab.sh"; su - student -c "cd \"$DEST\" && ./setup_bash_cyber_lab.sh"'
 
   user-data:
     disable_root: true
