@@ -2,43 +2,39 @@
 
 ## Short Answer
 
-Yes, an `autoinstall.yaml` helps repeatability when your class uses Ubuntu VMs.
+Proxmox snapshots are the primary repeatability mechanism for this course.
 
-It gives you deterministic base OS provisioning so every student starts from the same baseline image and package set.
+`autoinstall.yaml` is now an optional fallback for single-VM provisioning and image rebuild workflows.
 
-## When It Helps Most
+## Primary Repeatability Path
 
-- You run classes in Ubuntu Server VMs.
-- You repeatedly rebuild training machines.
-- You need consistent usernames, packages, and base settings.
-- You want lower setup drift between cohorts.
+Use Proxmox for classroom delivery:
 
-## When It Helps Less
+1. Build a clean Ubuntu 24.04 template VM.
+2. Run `infra/proxmox/per_vm_setup.sh` inside a clone.
+3. Validate logs and course files.
+4. Create a baseline snapshot (for example `course-ready`).
+5. Clone or reset all student VMs from that snapshot.
 
-- Your class primarily runs in WSL.
-- Students use mixed distributions without a common VM image.
-- You cannot control installation media/boot process.
+This gives faster and more predictable classroom resets than reinstalling each VM.
 
-## What It Does Not Replace
+## Where `autoinstall.yaml` Still Helps
 
-`autoinstall.yaml` prepares the OS, but you still need to run the lab setup script:
+- building the initial Ubuntu template VM
+- rebuilding a broken template image
+- small environments that do not yet use full Proxmox automation
+
+## What `autoinstall.yaml` Does Not Replace
+
+Even with autoinstall, you still need to run course setup to generate logs and lab assets:
 
 ```bash
 ./setup_bash_cyber_lab.sh
 ```
 
-That script creates logs, tools, labs, and final project artifacts used in class.
-
 ## Recommended Repeatability Stack
 
-1. Base image layer: `infra/autoinstall.yaml` (Ubuntu VM provisioning)
-2. Course layer: `setup_bash_cyber_lab.sh` (content and datasets)
-3. Validation layer: `docs/QA_QC_REVIEW_CHECKLIST.md`
-
-## Optional Improvement
-
-If you want fully unattended course prep, add a cloud-init or post-install hook that:
-
-1. pulls this repository
-2. runs `setup_bash_cyber_lab.sh`
-3. verifies key files exist
+1. Template layer: Ubuntu 24.04 build (`infra/autoinstall.yaml` optional)
+2. Course layer: `setup_bash_cyber_lab.sh` or `infra/proxmox/per_vm_setup.sh`
+3. Snapshot layer: Proxmox baseline snapshot for reset
+4. Validation layer: `docs/QA_QC_REVIEW_CHECKLIST.md`

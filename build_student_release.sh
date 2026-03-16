@@ -12,10 +12,11 @@ INCLUDE_PATHS=(
   "setup_bash_cyber_lab.sh"
   "advanced_breach_generator.sh"
   "docs/STUDENT_LAB_WORKBOOK.md"
+  "infra/proxmox/per_vm_setup.sh"
 )
 
 # Safety filter in case future include paths accidentally pull instructor-only content.
-EXCLUDE_NAME_REGEX='(slide|answer[_ -]?key|instructor|qa|qc|runbook|implementation|teaching_notes)'
+EXCLUDE_NAME_REGEX='(slide|answer[_ -]?key|instructor|qa|qc|runbook|implementation|teaching_notes|proxmox_provision|ssh_config_gen)'
 
 require_file() {
   local rel_path="$1"

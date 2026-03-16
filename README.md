@@ -1,26 +1,61 @@
 # Bash for Blue-Team Investigation Course Kit
 
-This repository contains a complete training package for teaching Bash-driven cybersecurity investigation.
+This repository contains a beginner-first Bash course for cybersecurity students who start with no Linux or terminal experience. The course builds from basic system orientation to practical blue-team log analysis and finishes with a student investigation script.
+
+## Primary Delivery Model
+
+The primary deployment target is a centralized Proxmox classroom environment:
+
+```text
+Classroom Network: 10.50.0.0/24
+
+10.50.0.1   Router
+10.50.0.2   Proxmox Host
+10.50.0.3   Instructor Control VM
+10.50.0.5   Attack Simulator VM
+10.50.0.10+ Student VMs
+```
+
+Students connect over the classroom network with SSH:
+
+```bash
+ssh student01@10.50.0.10
+```
+
+Use the Proxmox tooling in `infra/proxmox/` for bulk VM creation, per-VM setup, and instructor SSH convenience.
 
 ## What This Includes
 
-- `setup_bash_cyber_lab.sh`: one-command environment setup for students
-- `advanced_breach_generator.sh`: creates large, realistic breach datasets
-- `bash_cybersecurity_teaching_notes.md`: instructor quick-reference cheat sheet
-- `instructor_slide_deck_outline.md`: 16-hour slide and module outline
-- `docs/COURSE_IMPLEMENTATION_GUIDE.md`: strategy and course architecture
+- `setup_bash_cyber_lab.sh`: one-command student environment setup
+- `advanced_breach_generator.sh`: breach dataset generator with `--tier` sizing
+- `bash_cybersecurity_teaching_notes.md`: instructor quick-reference notes
+- `instructor_slide_deck_outline.md`: beginner-first lesson and slide outline
+- `docs/COURSE_IMPLEMENTATION_GUIDE.md`: course architecture and teaching sequence
 - `docs/INSTRUCTOR_TEACHING_GUIDE.md`: delivery and facilitation guide
-- `docs/STUDENT_LAB_WORKBOOK.md`: student lab tasks and submission template
+- `docs/INSTRUCTOR_LESSON_PRIMER_LINUX_FIRST.md`: instructor self-study guide
+- `docs/STUDENT_LAB_WORKBOOK.md`: student labs from first commands to final tool
 - `docs/LAB_FINDINGS_ANSWER_KEY.md`: instructor answer key and expected findings
-- `docs/QA_QC_REVIEW_CHECKLIST.md`: quality review checklist
-- `docs/DELIVERY_RUNBOOK.md`: step-by-step classroom runbook
-- `docs/AUTOINSTALL_REPEATABILITY_NOTES.md`: when and how to use Ubuntu autoinstall
-- `infra/autoinstall.yaml`: optional Ubuntu VM baseline provisioning file
-- `infra/cloudflare-pages/`: deploy-ready static files for NoCloud autoinstall (`user-data`, `meta-data`)
+- `docs/QA_QC_REVIEW_CHECKLIST.md`: classroom readiness checklist
+- `docs/DELIVERY_RUNBOOK.md`: day-of classroom execution runbook
+- `docs/AUTOINSTALL_REPEATABILITY_NOTES.md`: Proxmox-first repeatability notes
+- `infra/proxmox/`: Proxmox provisioning and classroom helper scripts
+- `infra/autoinstall.yaml`: optional single-VM Ubuntu baseline file
+- `infra/cloudflare-pages/`: optional fallback hosting for NoCloud autoinstall files
+
+## Student Outcome
+
+By the end of the course, students should be able to:
+
+- explain what Linux, the shell, and the terminal are
+- navigate directories and inspect files without getting lost
+- search large logs with `grep`
+- extract fields with `cut` and `awk`
+- rank and summarize attacker activity with pipelines
+- automate a repeatable investigation workflow in Bash
 
 ## Quick Start
 
-Run setup in Linux or WSL:
+Run setup inside a Linux VM or WSL instance:
 
 ```bash
 chmod +x setup_bash_cyber_lab.sh
@@ -33,7 +68,7 @@ Generated environment location:
 $HOME/bash-cyber-course
 ```
 
-Key generated paths:
+Generated paths:
 
 ```text
 logs/
@@ -42,61 +77,57 @@ tools/
 final_project/
 ```
 
-Run reference analyzer:
+Run the reference analyzer:
 
 ```bash
 cd $HOME/bash-cyber-course
 ./final_project/incident_analyzer.sh logs/auth.log --summary
 ```
 
-Run live simulator:
+Run the live simulator:
 
 ```bash
 cd $HOME/bash-cyber-course/tools
 ./attack_simulator.sh
 ```
 
-## Optional: Regenerate Advanced Dataset
+## Tiered Dataset Sizes
+
+Use the breach generator to match class scale and infrastructure limits:
 
 ```bash
-chmod +x advanced_breach_generator.sh
-./advanced_breach_generator.sh
+./advanced_breach_generator.sh --tier intro
+./advanced_breach_generator.sh --tier intermediate
+./advanced_breach_generator.sh --tier advanced
+./advanced_breach_generator.sh --tier final
 ```
 
-Or write logs to a custom directory:
+Recommended use:
+
+- `intro`: 10-20 MB for first grep and file-reading labs
+- `intermediate`: 30-50 MB for pipeline practice
+- `advanced`: 55-65 MB for threat hunting labs
+- `final`: 70-80 MB for the final challenge
+
+You can also write logs to a custom directory:
 
 ```bash
-./advanced_breach_generator.sh /tmp/custom-cyber-logs
+./advanced_breach_generator.sh /tmp/custom-cyber-logs --tier final
 ```
 
-## Intended Student Outcome
+## Optional Cloudflare Fallback
 
-Students should leave able to:
+Cloudflare Pages remains available as an optional fallback for Ubuntu autoinstall hosting when Proxmox is not the delivery path.
 
-- investigate logs quickly with pipelines
-- identify attacker artifacts
-- reconstruct attack timelines
-- automate repeatable investigations with Bash
-
-## Cloudflare Pages Autoinstall Hosting
-
-If you want Ubuntu autoinstall config hosted from GitHub through Cloudflare Pages:
+If you use it:
 
 1. Connect this repo to Cloudflare Pages.
 2. Set build command to empty.
 3. Set build output directory to `infra/cloudflare-pages`.
-4. Attach custom domain `autodeploy.leflr.com`.
-5. Verify:
-	- `https://autodeploy.leflr.com/user-data`
-	- `https://autodeploy.leflr.com/meta-data`
+4. Verify the deployed `user-data` and `meta-data` endpoints.
 
 Installer kernel parameter:
 
 ```text
 ds=nocloud-net;s=https://autodeploy.leflr.com/
 ```
-
-=======
-# Bash-Lesson
-Bash-based blue-team investigation lab kit with automated environment setup, realistic breach log generation, student labs, instructor guides, QA/QC checklists, and deployable Ubuntu autoinstall assets for repeatable SOC-style training.
->>>>>>> 9bc12b19b1e5bd839aebffba70707cfd7c8b1d42

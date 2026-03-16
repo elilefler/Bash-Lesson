@@ -1,4 +1,5 @@
 #cloud-config
+# Ubuntu 24.04 LTS baseline autoinstall profile (fallback path; Proxmox snapshots are primary).
 autoinstall:
   version: 1
   locale: en_US.UTF-8

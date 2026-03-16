@@ -1,323 +1,167 @@
 # Bash Cybersecurity Instructor Cheat Sheet
 
-Quick-reference guide for instructors teaching Bash for **blue-team log investigation**.
-Organized by **real investigative tasks** rather than tool categories.
+Quick reference for teaching Bash as a blue-team investigation tool.
 
----
+## Topic 0 - Orientation Language
 
-## Core Concept to Reinforce
+Use this wording with beginners:
 
-Linux investigation relies on **chaining simple tools**.
+- Linux: the operating system in the VM.
+- Terminal: the window where commands are typed.
+- Shell: the command interpreter inside the terminal.
+- Blue team: defenders investigating suspicious activity.
 
-Example investigation pipeline:
+## Topic 1 - First Commands
 
 ```bash
-grep "Failed password" auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
+whoami
+date
+clear
+man ls
+ls --help
 ```
 
-Breakdown:
-
-| Tool | Purpose |
-| --- | --- |
-| `grep` | Find attack events |
-| `awk` | Extract attacker IP |
-| `sort` | Group identical values |
-| `uniq` | Count occurrences |
-| `sort -nr` | Show most frequent attacker |
-
-## Navigation & Environment
-
-Determine current working directory:
+## Topic 2 - Navigation and Filesystem
 
 ```bash
 pwd
-```
-
-List directory contents:
-
-```bash
 ls
 ls -la
-```
-
-Change directories:
-
-```bash
-cd directory
+cd logs
 cd ..
-cd ~
-```
-
-Locate files:
-
-```bash
 find . -name "*.log"
-```
-
-Show command history:
-
-```bash
 history
 ```
 
-## Viewing Large Log Files
-
-View beginning of file:
+## Topic 3 - Reading Logs Safely
 
 ```bash
-head auth.log
-```
-
-View end of file:
-
-```bash
-tail auth.log
-```
-
-Follow logs in real time:
-
-```bash
-tail -f auth.log
-```
-
-Scrollable log viewer:
-
-```bash
-less auth.log
+cat logs/bash_history.log
+head logs/auth.log
+tail logs/auth.log
+tail -f logs/live_auth.log
+less logs/auth.log
+wc -l logs/access.log
 ```
 
 Useful `less` controls:
 
-| Key | Function |
-| --- | --- |
-| `SPACE` | Scroll down |
-| `/pattern` | Search |
-| `n` | Next match |
-| `q` | Quit |
+- `SPACE` scrolls down
+- `/pattern` searches
+- `n` jumps to next match
+- `q` quits
 
-Count total lines:
+## Topic 4 - Searching with grep
 
 ```bash
-wc -l auth.log
+grep "Failed password" logs/auth.log
+grep -c "Failed password" logs/auth.log
+grep -n "Accepted password" logs/auth.log
+grep -E "Failed|Accepted" logs/auth.log
+grep -i "cron" logs/syslog
+grep -r "wget" logs/
 ```
 
-## Searching Logs with `grep`
-
-Basic search:
+## Topic 5 - Pipelines
 
 ```bash
-grep "Failed password" auth.log
+grep "Failed password" logs/auth.log | wc -l
+grep "Failed password" logs/auth.log | awk '{print $11}'
+grep "Failed password" logs/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
 ```
 
-Case-insensitive search:
+Core reminder:
+
+- one stage at a time
+- validate output before adding the next stage
+
+## Topic 6 - Data Extraction (`cut`, `awk`, `sort`, `uniq`)
+
+Extract attacker IP from auth log:
 
 ```bash
-grep -i "error" syslog
+grep "Failed password" logs/auth.log | awk '{print $11}'
 ```
 
-Show line numbers:
+Extract first field (client IP) from access log using `cut`:
 
 ```bash
-grep -n "Accepted password" auth.log
+cut -d' ' -f1 logs/access.log | head
 ```
 
-Search multiple patterns:
+Rank top attacking IPs:
 
 ```bash
-grep -E "Failed|Accepted" auth.log
-```
-
-Recursive search:
-
-```bash
-grep -r "wget" .
-```
-
-Exclude patterns:
-
-```bash
-grep -v "session opened" auth.log
-```
-
-## Extracting Data with `awk`
-
-Example log entry:
-
-```text
-Jul 10 09:15:02 server sshd[1423]: Failed password for root from 185.220.101.4 port 45512 ssh2
-```
-
-Extract attacker IP:
-
-```bash
-awk '{print $11}'
-```
-
-Extract timestamp:
-
-```bash
-awk '{print $1,$2,$3}'
-```
-
-Example pipeline:
-
-```bash
-grep "Failed password" auth.log | awk '{print $11}'
-```
-
-## Counting Attackers
-
-Find top attacking IP addresses:
-
-```bash
-grep "Failed password" auth.log \
+grep "Failed password" logs/auth.log \
 | awk '{print $11}' \
 | sort \
 | uniq -c \
 | sort -nr
 ```
 
-Example output:
+## Topic 7 - Threat Hunting Prompts
 
-```text
-400 185.220.101.4
-18 192.168.1.24
-12 10.0.0.3
-```
+Use these questions:
 
-## Identifying Compromised Accounts
+- Who is failing to log in the most?
+- Did any attempt succeed?
+- What command downloaded malware?
+- Is there persistence evidence?
+- What order did events happen?
 
-Find successful logins:
+## Topic 8 - Scripting Essentials
 
-```bash
-grep "Accepted password" auth.log
-```
-
-Extract username:
+Create files with `nano`:
 
 ```bash
-grep "Accepted password" auth.log | awk '{print $9}'
+nano tools/my_investigator.sh
 ```
 
-## Reconstructing Attack Timeline
-
-Show failed and successful login attempts:
-
-```bash
-grep -E "Failed password|Accepted password" auth.log
-```
-
-Sort by time if necessary:
-
-```bash
-sort auth.log
-```
-
-## Malware Investigation
-
-Search shell history:
-
-```bash
-grep "wget" bash_history.log
-```
-
-Search for executed scripts:
-
-```bash
-grep ".sh" bash_history.log
-```
-
-Look for reverse shell commands:
-
-```bash
-grep "/dev/tcp" bash_history.log
-```
-
-## Detecting Persistence
-
-Search for cron jobs:
-
-```bash
-grep cron syslog
-```
-
-Example malicious persistence:
-
-```text
-* * * * * /tmp/payload.sh
-```
-
-## Web Log Investigation
-
-Extract client IP addresses:
-
-```bash
-awk '{print $1}' access.log
-```
-
-Find top web clients:
-
-```bash
-awk '{print $1}' access.log | sort | uniq -c | sort -nr
-```
-
-Look for sensitive files:
-
-```bash
-grep backup.zip access.log
-```
-
-## Network Indicators
-
-Search for suspicious outbound connections:
-
-```bash
-grep "connection" syslog
-```
-
-Search for known command-and-control IP:
-
-```bash
-grep "45.77.88.2" syslog
-```
-
-## Investigating an Attacker Across All Logs
-
-Pivot across all logs:
-
-```bash
-grep -r "185.220.101.4" logs/
-```
-
-This reveals every artifact related to the attacker.
-
-## Bash Script Basics
-
-Simple analysis script:
+Basic pattern with validation and `if/else`:
 
 ```bash
 #!/bin/bash
-
 LOGFILE=$1
 
-grep "Failed password" "$LOGFILE"
+if [ -z "$LOGFILE" ]; then
+	echo "Usage: $0 logfile"
+	exit 1
+else
+	grep "Failed password" "$LOGFILE" | awk '{print $11}' | sort | uniq -c | sort -nr
+fi
 ```
 
-Make executable:
+Basic loop pattern:
 
 ```bash
-chmod +x script.sh
+for file in logs/*.log; do
+	echo "Checking $file"
+done
 ```
 
-Run script:
+Execute script:
 
 ```bash
-./script.sh auth.log
+chmod +x tools/my_investigator.sh
+./tools/my_investigator.sh logs/auth.log
 ```
 
-## Debugging Scripts
+## Topic 9 - Final Tool Checks
 
-Print commands during execution:
+```bash
+./final_project/incident_analyzer.sh logs/auth.log --summary
+./final_project/incident_analyzer.sh logs/auth.log --top-ips
+./final_project/incident_analyzer.sh logs/auth.log --timeline
+./final_project/incident_analyzer.sh logs/access.log --suspicious-downloads
+```
+
+## Fast Debugging Aids
+
+```bash
+awk '{print NF, $0}' logs/auth.log | head -n 3
+pwd
+ls -l tools/my_investigator.sh
+```
 
 ```bash
 set -x

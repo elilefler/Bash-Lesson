@@ -2,7 +2,86 @@
 
 set -euo pipefail
 
-BASE_DIR="${1:-$HOME/bash-cyber-course/logs}"
+usage() {
+	cat <<'EOF'
+Usage: ./advanced_breach_generator.sh [output_dir] [--tier intro|intermediate|advanced|final]
+
+Examples:
+  ./advanced_breach_generator.sh
+  ./advanced_breach_generator.sh /tmp/course-logs --tier advanced
+  ./advanced_breach_generator.sh --tier final
+EOF
+}
+
+BASE_DIR="$HOME/bash-cyber-course/logs"
+TIER="intro"
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--tier)
+			if [ "$#" -lt 2 ]; then
+				echo "[ERROR] Missing value for --tier" >&2
+				usage
+				exit 1
+			fi
+			TIER="$2"
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		-*)
+			echo "[ERROR] Unknown option: $1" >&2
+			usage
+			exit 1
+			;;
+		*)
+			BASE_DIR="$1"
+			shift
+			;;
+	esac
+done
+
+case "$TIER" in
+	intro)
+		AUTH_BACKGROUND_LINES=80000
+		ACCESS_BACKGROUND_LINES=70000
+		SYS_BACKGROUND_LINES=30000
+		HISTORY_BACKGROUND_LINES=12000
+		NET_BACKGROUND_LINES=70000
+		ESTIMATED_SIZE="10-20 MB"
+		;;
+	intermediate)
+		AUTH_BACKGROUND_LINES=220000
+		ACCESS_BACKGROUND_LINES=180000
+		SYS_BACKGROUND_LINES=80000
+		HISTORY_BACKGROUND_LINES=30000
+		NET_BACKGROUND_LINES=180000
+		ESTIMATED_SIZE="30-50 MB"
+		;;
+	advanced)
+		AUTH_BACKGROUND_LINES=360000
+		ACCESS_BACKGROUND_LINES=300000
+		SYS_BACKGROUND_LINES=140000
+		HISTORY_BACKGROUND_LINES=50000
+		NET_BACKGROUND_LINES=300000
+		ESTIMATED_SIZE="55-65 MB"
+		;;
+	final)
+		AUTH_BACKGROUND_LINES=460000
+		ACCESS_BACKGROUND_LINES=380000
+		SYS_BACKGROUND_LINES=180000
+		HISTORY_BACKGROUND_LINES=65000
+		NET_BACKGROUND_LINES=380000
+		ESTIMATED_SIZE="70-80 MB"
+		;;
+	*)
+		echo "[ERROR] Invalid tier: ${TIER}" >&2
+		usage
+		exit 1
+		;;
+esac
 
 AUTH_LOG="${BASE_DIR}/auth.log"
 ACCESS_LOG="${BASE_DIR}/access.log"
@@ -17,6 +96,7 @@ LATERAL_IP="10.0.0.15"
 COMPROMISED_USER="admin"
 
 echo "[+] Generating advanced breach logs in ${BASE_DIR}"
+echo "[+] Tier selected: ${TIER} (~${ESTIMATED_SIZE})"
 
 mkdir -p "${BASE_DIR}"
 
@@ -27,19 +107,30 @@ mkdir -p "${BASE_DIR}"
 : > "${NET_LOG}"
 
 echo "[+] Stage 0/10: Generating normal background activity"
-for ((i=1; i<=160000; i++)); do
-	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 
+for ((i=1; i<=AUTH_BACKGROUND_LINES; i++)); do
+	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	printf 'Jul 10 08:%02d:%02d server sshd[%d]: Failed password for root from %s port %d ssh2\n' \
 		"$((RANDOM % 60))" "$((RANDOM % 60))" "$RANDOM" "$ip" "$RANDOM" >> "${AUTH_LOG}"
+done
 
+for ((i=1; i<=ACCESS_BACKGROUND_LINES; i++)); do
+	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	printf '%s - - [10/Jul/2024:08:%02d:%02d] "GET /index.html HTTP/1.1" 200\n' \
 		"$ip" "$((RANDOM % 60))" "$((RANDOM % 60))" >> "${ACCESS_LOG}"
+done
 
+for ((i=1; i<=SYS_BACKGROUND_LINES; i++)); do
 	printf 'Jul 10 08:%02d:%02d server systemd[%d]: Started user service\n' \
 		"$((RANDOM % 60))" "$((RANDOM % 60))" "$RANDOM" >> "${SYS_LOG}"
+done
 
-	printf 'ls\ncd /var/www\n' >> "${HISTORY_LOG}"
+for ((i=1; i<=HISTORY_BACKGROUND_LINES; i++)); do
+	printf 'ls\ncd /var/www\ncat /var/log/auth.log\n' >> "${HISTORY_LOG}"
+done
+
+for ((i=1; i<=NET_BACKGROUND_LINES; i++)); do
+	ip="192.168.$((RANDOM % 255)).$((RANDOM % 255))"
 	printf 'Connection from %s to 192.168.1.1:443\n' "$ip" >> "${NET_LOG}"
 done
 
@@ -106,6 +197,8 @@ echo "- ${ACCESS_LOG}"
 echo "- ${HISTORY_LOG}"
 echo "- ${SYS_LOG}"
 echo "- ${NET_LOG}"
+echo
+echo "Approximate combined log footprint: ${ESTIMATED_SIZE}"
 echo
 echo "Suggested validation commands:"
 echo "grep 'Failed password' ${AUTH_LOG} | awk '{print \$11}' | sort | uniq -c | sort -nr | head"
